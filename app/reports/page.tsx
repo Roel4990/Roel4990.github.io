@@ -26,6 +26,11 @@ const reports = [
     title: "pytest 테스트 스위트 가이드",
     desc: "리팩토링해도 로직이 그대로인지 자동으로 검증하는 방법",
   },
+  {
+    href: "/reports/verification-report",
+    title: "판정 로직 검증 리포트",
+    desc: "시뮬레이터 로그와 pytest를 교차 확인한 28가지 판정 분기 검증",
+  },
 ];
 
 export default function ReportsIndex() {

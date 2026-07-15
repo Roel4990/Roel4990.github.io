@@ -180,7 +180,7 @@ export default function PytestGuideReport() {
       <div className="rpt-pytest">
         <div className="topbar">
           <div className="topbar__title">AI CCTV 안전 판단 시스템 — 테스트 가이드</div>
-          <div className="topbar__tags"><span className="tag">issue #19</span><span className="tag">PR #20</span><span className="tag">+PR #34</span></div>
+          <div className="topbar__tags"><span className="tag">issue #19</span><span className="tag">PR #20</span><span className="tag">+PR #34</span><span className="tag">2026-07-15 업데이트</span></div>
         </div>
         <nav className="toc">
           <a href="#quickstart">설치·실행</a>
@@ -197,13 +197,14 @@ export default function PytestGuideReport() {
           <p className="lede">
             함수 분리·파일 이동 같은 리팩토링 이후에도 기존 동작이 그대로 유지되는지 확인하기 위한
             회귀 테스트 모음입니다. 처음엔 4개 파일 18개였지만, Level 1~5 기준표 작업(PR #34) 이후
-            <span className="mono">test_multimodal_fusion.py</span>가 추가되며 5개 파일 37개로 늘었습니다.
+            <span className="mono">test_multimodal_fusion.py</span>가 추가됐고, 이후 판정 로직 감사(audit)를
+            거치며 이 파일 하나만 37개까지 늘어 지금은 5개 파일 54개입니다.
           </p>
 
           <div className="stats">
             <div className="stat"><div className="stat__value">5개</div><div className="stat__label">테스트 파일</div></div>
-            <div className="stat"><div className="stat__value">37개</div><div className="stat__label">테스트 함수</div></div>
-            <div className="stat"><div className="stat__value">4.4s</div><div className="stat__label">전체 실행 시간</div></div>
+            <div className="stat"><div className="stat__value">54개</div><div className="stat__label">테스트 함수</div></div>
+            <div className="stat"><div className="stat__value">4.2s</div><div className="stat__label">전체 실행 시간</div></div>
             <div className="stat"><div className="stat__value">0</div><div className="stat__label">수동 확인 필요 항목</div></div>
           </div>
 
@@ -259,7 +260,7 @@ export default function PytestGuideReport() {
                   <tr><td className="num">2</td><td className="mono">test_service.py</td><td className="num">3</td><td>risk_scoring 분리 후 None 안전 처리</td></tr>
                   <tr><td className="num">3</td><td className="mono">test_matching.py</td><td className="num">3</td><td>bio-cctv 매칭 로직</td></tr>
                   <tr><td className="num">4</td><td className="mono">test_api.py</td><td className="num">4</td><td>API 엔드포인트 정상 응답</td></tr>
-                  <tr><td className="num">5</td><td className="mono">test_multimodal_fusion.py</td><td className="num">20</td><td>Level 1~5 기준표 + 갭 케이스 회귀</td></tr>
+                  <tr><td className="num">5</td><td className="mono">test_multimodal_fusion.py</td><td className="num">37</td><td>Level 1~5 기준표 + 갭 케이스 + 판정 로직 감사(audit) 회귀</td></tr>
                 </tbody>
               </table>
             </div>
@@ -634,18 +635,18 @@ tests/test_api.py:25: <span className="fail-line">assert 0 == 5</span>
           </section>
 
           <section id="f5">
-            <div className="section__head"><span className="section__num">06</span><h2>test_multimodal_fusion.py <span className="mono" style={{ fontSize: "13px", color: "var(--text-dim)", fontWeight: 400 }}>(신규 · PR #34)</span></h2></div>
+            <div className="section__head"><span className="section__num">06</span><h2>test_multimodal_fusion.py <span className="mono" style={{ fontSize: "13px", color: "var(--text-dim)", fontWeight: 400 }}>(PR #34 신규 · 2026-07-15 판정 로직 감사로 대폭 확장)</span></h2></div>
             <div className="filecard">
-              <div className="filecard__head"><span className="filecard__name">test_multimodal_fusion.py</span><span className="filecard__count">20 tests</span></div>
+              <div className="filecard__head"><span className="filecard__name">test_multimodal_fusion.py</span><span className="filecard__count">37 tests</span></div>
 
               <dl className="qa">
                 <div>
                   <dt>무엇을 테스트하는가</dt>
-                  <dd><span className="mono">fuse()</span>가 Level 1~5 공식 기준표(법령 근거 매핑) 8개 조합, 표에 없어서 별도로 컨펌받은 갭 케이스 10개 조합, 그리고 PPE 위반 / SOS 상황에서 법령 문구가 reason에 실제로 포함되는지를 검증합니다.</dd>
+                  <dd><span className="mono">fuse()</span>가 Level 1~5 공식 기준표(법령 근거 매핑) 8개 조합, 표에 없어서 컨펌받은 갭 케이스 26개 조합, 그리고 PPE 위반 / SOS / fainting+fatigue 문구가 실제로 정확히 나오는지를 검증합니다. 26개 갭 케이스 중 다수는 시뮬레이터 실측 데이터에서 등급-점수 불일치(예: CAUTION인데 95점)를 발견한 뒤 추가된 것들입니다.</dd>
                 </div>
                 <div>
                   <dt>왜 테스트하는가</dt>
-                  <dd className="why">Level 1~5 표를 반영하면서 조합 하나하나를 스크래치 스크립트로 손수 재현·확인했던 과정을 그대로 회귀 테스트로 옮겼습니다. &quot;테스트를 통과하면 표의 조합이 전부 커버된 것&quot;이 실제로 성립하도록 고정해 둔 파일입니다.</dd>
+                  <dd className="why">Level 1~5 표를 반영하면서 조합 하나하나를 스크래치 스크립트로 손수 재현·확인했던 과정을 그대로 회귀 테스트로 옮겼습니다. 이후 실시간 시뮬레이터 로그를 분석하며 &quot;PPE 미착용 체크가 생체 상태 규칙보다 뒤에 있어서 위험이 가려지는&quot; 것 같은 실제 버그를 여러 건 발견했고, 고칠 때마다 그 조합을 테스트로 고정해서 &quot;테스트를 통과하면 전체 26개 판정 조합이 전부 커버된 것&quot;이 실제로 성립하도록 만들었습니다.</dd>
                 </div>
               </dl>
 
@@ -728,7 +729,16 @@ def test_fuse_sos_cites_regulation():
     assert result["severity"] == Severity.CRITICAL
 
 
-# 기준표에 명시 안 돼서 컨펌받은 10개 갭 케이스 (전부 확정 완료)
+def test_fuse_fainting_fatigue_message_not_unconfirmed():
+    # 영상 쓰러짐 + 생체=과로는 생체 데이터가 실제로 확인된 상태라
+    # "생체 미확인" 문구(생체 데이터 없음 전용)를 쓰면 안 됨
+    result = fuse(_bio("fatigue", True), _video("fainting"), sqi=0.9)
+    assert result["severity"] == Severity.CRITICAL
+    assert "미확인" not in result["recommendation"]
+    assert "과로" in result["recommendation"]
+
+
+# 기준표에 명시 안 돼서 컨펌받은 26개 갭 케이스 (전부 확정 완료)
 GAP_CASES = [
     ("부정맥(생체)+실신(영상)",
      _bio("arrhythmia", True), _video("fainting"), Severity.CRITICAL),
@@ -753,8 +763,7 @@ GAP_CASES = [
      _video("standing", harness=False, in_danger=True, high_altitude=True),
      Severity.CRITICAL),
 
-    # 구역 진입만(보호구는 정상 착용) → 컨펌 결과 NORMAL. 보호구를 제대로
-    # 착용했다면 위험구역/고소구역 진입 자체는 정상 업무 범위로 취급.
+    # 구역 진입만(보호구는 정상 착용) → 컨펌 결과 NORMAL.
     ("위험구역만 진입 + 보호구 정상 착용",
      _bio("normal", False),
      _video("standing", in_danger=True),
@@ -769,6 +778,100 @@ GAP_CASES = [
      _bio("normal", False),
      _video("standing", in_danger=True, helmet=False),
      Severity.CRITICAL),
+
+    # 부정맥/과로/실신 단독이면 WARNING(또는 CAUTION)이지만, PPE 미착용+구역까지
+    # 겹치면 그 결합 위반이 더 급박해서 CRITICAL로 격상 — 시뮬레이터 실측에서
+    # "등급은 낮은데 점수만 95"인 불일치를 발견하고 하나씩 추가됨
+    ("부정맥(생체)+헬멧미착용+고소구역(영상)",
+     _bio("arrhythmia", True),
+     _video("sitting", high_altitude=True, helmet=False),
+     Severity.CRITICAL),
+
+    ("과로(생체)+헬멧미착용+고소구역(영상)",
+     _bio("fatigue", True),
+     _video("standing", high_altitude=True, helmet=False),
+     Severity.CRITICAL),
+
+    ("실신(생체)+헬멧미착용+고소구역(영상)",
+     _bio("syncope", True),
+     _video("standing", high_altitude=True, helmet=False),
+     Severity.CRITICAL),
+
+    # 쓰러짐(fainting)+실신/부정맥에 PPE위반+구역까지 겹친 경우
+    ("실신(생체)+쓰러짐(영상)+헬멧미착용+고소구역",
+     _bio("syncope", True),
+     _video("fainting", high_altitude=True, helmet=False),
+     Severity.CRITICAL),
+
+    ("부정맥(생체)+쓰러짐(영상)+헬멧미착용+고소구역",
+     _bio("arrhythmia", True),
+     _video("fainting", high_altitude=True, helmet=False),
+     Severity.CRITICAL),
+
+    ("쓰러짐(영상) 단독+생체데이터없음+헬멧미착용+고소구역",
+     None,
+     _video("fainting", high_altitude=True, helmet=False),
+     Severity.CRITICAL),
+
+    # 규칙 4의 세 번째 분기(영상도 이상행동이지만 쓰러짐은 아닌 경우)
+    ("실신(생체) 단독+앉음(영상, 쓰러짐 아닌 이상행동)",
+     _bio("syncope", True),
+     _video("sitting"),
+     Severity.CRITICAL),
+
+    # PPE위반이 구역 없이 단독으로만 있는 경우
+    ("과로(생체)+헬멧미착용(영상), 구역없음",
+     _bio("fatigue", True),
+     _video("standing", helmet=False),
+     Severity.WARNING),
+
+    ("부정맥(생체)+헬멧미착용(영상), 구역없음",
+     _bio("arrhythmia", True),
+     _video("standing", helmet=False),
+     Severity.WARNING),
+
+    # SOS는 생체/PPE/구역 전부와 무관하게 최우선 규칙이라, 지오펜스 가중이
+    # 겹쳐도 등급은 그대로 CRITICAL — 점수만 95→100으로 캡됨
+    ("SOS(영상)+헬멧미착용+고소구역",
+     _bio("normal", False),
+     _video("sos_action", helmet=False, high_altitude=True),
+     Severity.CRITICAL),
+
+    ("정상(생체)+쓰러짐(영상)+헬멧미착용+고소구역",
+     _bio("normal", False),
+     _video("fainting", helmet=False, high_altitude=True),
+     Severity.CRITICAL),
+
+    ("과로(생체)+쓰러짐(영상)+헬멧미착용+고소구역",
+     _bio("fatigue", True),
+     _video("fainting", helmet=False, high_altitude=True),
+     Severity.CRITICAL),
+
+    ("과로(생체)+쓰러짐(영상), 구역없음",
+     _bio("fatigue", True),
+     _video("fainting"),
+     Severity.CRITICAL),
+
+    # 웅크림 20초 미만(지속시간 조건 미충족)
+    ("정상(생체)+웅크림 20초 미만(영상)",
+     _bio("normal", False),
+     _video("crouching", duration=10),
+     Severity.NORMAL),
+
+    # crouching<20초는 is_abnormal=False라 "영상 정상 확인됨" 분기(WARNING)를
+    # 탐. sitting(즉시 이상행동)과 대조적으로 잠깐의 정상 동작(물건 줍기 등)일
+    # 수 있어 CRITICAL로 격상하지 않기로 컨펌 — 오탐 늘리는 것보다 낫다고 판단
+    ("실신(생체)+웅크림 20초 미만(영상, 정상 취급)",
+     _bio("syncope", True),
+     _video("crouching", duration=10),
+     Severity.WARNING),
+
+    # 20초 넘어가면 is_abnormal=True로 바뀌어 자동으로 CRITICAL 격상됨.
+    # 별도 코드 수정 없이 기존 20초 문턱값이 이 역할을 이미 하고 있었음
+    ("실신(생체)+웅크림 20초 이상(영상)",
+     _bio("syncope", True),
+     _video("crouching", duration=25),
+     Severity.CRITICAL),
 ]
 
 
@@ -782,42 +885,59 @@ def test_fuse_gap_cases_confirmed(title, bio_result, video_object, expected_seve
 
               <h4 className="sub">성공했을 때 로그</h4>
               <div className="term">
-                <span className="term-status term-status--pass">20 PASSED</span>
-                <pre><span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level5: 실신(생체)+실신(영상)] PASSED</span> [  5%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level5: 무관(생체)+구조요청(영상)] PASSED</span> [ 10%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level4: 부정맥(생체)+웅크림 20초+(영상)] PASSED</span> [ 15%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level4: 부정맥(생체)+서있음(영상)] PASSED</span> [ 20%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level4: 무관(생체)+보호구미착용(영상)] PASSED</span> [ 25%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level3: 과로(생체)+앉아있음(영상)] PASSED</span> [ 30%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level3: 정상(생체)+웅크림 장시간(영상)] PASSED</span> [ 35%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_matches_level_table[Level1~2: 정상(생체)+서있음(영상)] PASSED</span> [ 40%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_ppe_violation_cites_regulation PASSED</span> [ 45%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_sos_cites_regulation PASSED</span> [ 50%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[부정맥(생체)+실신(영상)] PASSED</span> [ 55%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[실신(영상) 단독 + 생체 정상 확인됨] PASSED</span> [ 60%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[실신(영상) 단독 + 생체 데이터 없음] PASSED</span> [ 65%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[실신(생체) 단독 + 영상 정상 확인됨] PASSED</span> [ 70%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[실신(생체) 단독 + 영상 데이터 없음] PASSED</span> [ 75%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[과로(생체)+웅크림 20초+(영상)] PASSED</span> [ 80%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[지오펜스: 위험구역+고소구역+안전대미착용] PASSED</span> [ 85%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[위험구역만 진입 + 보호구 정상 착용] PASSED</span> [ 90%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[고소구역만 진입 + 보호구 정상 착용] PASSED</span> [ 95%]
-<span className="pass-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[위험구역+헬멧 미착용 (구역 단독 케이스와 대조용)] PASSED</span> [100%]
+                <span className="term-status term-status--pass">37 PASSED</span>
+                <pre><span className="pass-line">test_fuse_matches_level_table[Level5: 실신(생체)+실신(영상)] PASSED</span> [  3%]
+<span className="pass-line">test_fuse_matches_level_table[Level5: 무관(생체)+구조요청(영상)] PASSED</span> [  5%]
+<span className="pass-line">test_fuse_matches_level_table[Level4: 부정맥(생체)+웅크림 20초+(영상)] PASSED</span> [  8%]
+<span className="pass-line">test_fuse_matches_level_table[Level4: 부정맥(생체)+서있음(영상)] PASSED</span> [ 11%]
+<span className="pass-line">test_fuse_matches_level_table[Level4: 무관(생체)+보호구미착용(영상)] PASSED</span> [ 14%]
+<span className="pass-line">test_fuse_matches_level_table[Level3: 과로(생체)+앉아있음(영상)] PASSED</span> [ 16%]
+<span className="pass-line">test_fuse_matches_level_table[Level3: 정상(생체)+웅크림 장시간(영상)] PASSED</span> [ 19%]
+<span className="pass-line">test_fuse_matches_level_table[Level1~2: 정상(생체)+서있음(영상)] PASSED</span> [ 22%]
+<span className="pass-line">test_fuse_ppe_violation_cites_regulation PASSED</span> [ 24%]
+<span className="pass-line">test_fuse_sos_cites_regulation PASSED</span> [ 27%]
+<span className="pass-line">test_fuse_fainting_fatigue_message_not_unconfirmed PASSED</span> [ 30%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[부정맥(생체)+실신(영상)] PASSED</span> [ 32%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(영상) 단독 + 생체 정상 확인됨] PASSED</span> [ 35%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(영상) 단독 + 생체 데이터 없음] PASSED</span> [ 38%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체) 단독 + 영상 정상 확인됨] PASSED</span> [ 41%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체) 단독 + 영상 데이터 없음] PASSED</span> [ 43%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[과로(생체)+웅크림 20초+(영상)] PASSED</span> [ 46%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[지오펜스: 위험구역+고소구역+안전대미착용] PASSED</span> [ 49%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[위험구역만 진입 + 보호구 정상 착용] PASSED</span> [ 51%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[고소구역만 진입 + 보호구 정상 착용] PASSED</span> [ 54%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[위험구역+헬멧 미착용 (구역 단독 케이스와 대조용)] PASSED</span> [ 57%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[부정맥(생체)+헬멧미착용+고소구역(영상)] PASSED</span> [ 59%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[과로(생체)+헬멧미착용+고소구역(영상)] PASSED</span> [ 62%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체)+헬멧미착용+고소구역(영상)] PASSED</span> [ 65%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체)+쓰러짐(영상)+헬멧미착용+고소구역] PASSED</span> [ 68%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[부정맥(생체)+쓰러짐(영상)+헬멧미착용+고소구역] PASSED</span> [ 70%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[쓰러짐(영상) 단독+생체데이터없음+헬멧미착용+고소구역] PASSED</span> [ 73%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체) 단독+앉음(영상, 쓰러짐 아닌 이상행동)] PASSED</span> [ 76%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[과로(생체)+헬멧미착용(영상), 구역없음] PASSED</span> [ 78%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[부정맥(생체)+헬멧미착용(영상), 구역없음] PASSED</span> [ 81%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[SOS(영상)+헬멧미착용+고소구역] PASSED</span> [ 84%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[정상(생체)+쓰러짐(영상)+헬멧미착용+고소구역] PASSED</span> [ 86%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[과로(생체)+쓰러짐(영상)+헬멧미착용+고소구역] PASSED</span> [ 89%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[과로(생체)+쓰러짐(영상), 구역없음] PASSED</span> [ 92%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[정상(생체)+웅크림 20초 미만(영상)] PASSED</span> [ 95%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체)+웅크림 20초 미만(영상, 정상 취급)] PASSED</span> [ 97%]
+<span className="pass-line">test_fuse_gap_cases_confirmed[실신(생체)+웅크림 20초 이상(영상)] PASSED</span> [100%]
 
-<span className="pass-line">20 passed in 0.83s</span></pre>
+<span className="pass-line">37 passed in 0.24s</span></pre>
               </div>
 
               <p className="repro-note">&quot;위험구역만 진입 + 보호구 정상 착용&quot; 기대값을 일부러 CAUTION으로 바꿔서 재현</p>
               <h4 className="sub">실패했을 때 로그</h4>
               <div className="term">
                 <span className="term-status term-status--fail">1 FAILED</span>
-                <pre><span className="fail-line">tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[위험구역만 진입 + 보호구 정상 착용] FAILED</span> [ 90%]
+                <pre><span className="fail-line">test_fuse_gap_cases_confirmed[위험구역만 진입 + 보호구 정상 착용] FAILED</span> [ 51%]
 
 <span className="dim-line">================================== FAILURES ===================================</span>
-<span className="fail-line">E   AssertionError: 위험구역만 진입 + 보호구 정상 착용: expected Severity.CAUTION, got Severity.NORMAL (risk_score=20, reason=일반 작업기준 충족)</span>
+<span className="fail-line">E   AssertionError: 위험구역만 진입 + 보호구 정상 착용: expected Severity.CAUTION, got Severity.NORMAL (risk_score=10, reason=일반 작업기준 충족)</span>
 
-<span className="fail-line">FAILED tests/test_multimodal_fusion.py::test_fuse_gap_cases_confirmed[위험구역만 진입 + 보호구 정상 착용]</span>
-<span className="fail-line">1 failed, 19 passed in 0.79s</span></pre>
+<span className="fail-line">FAILED test_fuse_gap_cases_confirmed[위험구역만 진입 + 보호구 정상 착용]</span>
+<span className="fail-line">1 failed, 36 passed in 0.23s</span></pre>
               </div>
             </div>
           </section>
@@ -826,14 +946,14 @@ def test_fuse_gap_cases_confirmed(title, bio_result, video_object, expected_seve
             <div className="section__head"><span className="section__num">07</span><h2>최종 확인</h2></div>
             <p className="section__desc">5개 파일 모두 원상복구 후 <span className="mono">pytest</span>를 돌리면 다시 정상 상태로 돌아옵니다.</p>
             <div className="banner">
-              <div className="banner__num">37 / 37</div>
-              <div className="banner__text">passed, 3 warnings in 4.41s</div>
+              <div className="banner__num">54 / 54</div>
+              <div className="banner__text">passed, 3 warnings in 4.15s</div>
             </div>
           </section>
         </main>
 
         <footer>
-          AI CCTV 안전 판단 시스템 · pytest 테스트 스위트 가이드 — issue #19 · PR #20 / #34 기준
+          AI CCTV 안전 판단 시스템 · pytest 테스트 스위트 가이드 — issue #19 · PR #20 / #34 기준, 2026-07-15 업데이트(54개)
         </footer>
       </div>
     </>
