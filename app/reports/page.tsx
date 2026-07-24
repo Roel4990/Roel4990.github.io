@@ -5,31 +5,16 @@ import { useSupabaseSession } from "./_components/useSupabaseSession";
 import LoginScreen, { LoadingScreen } from "./_components/LoginScreen";
 import LogoutButton from "./_components/LogoutButton";
 
-const reports = [
+const versions = [
   {
-    href: "/reports/structure-overview",
-    title: "구조 변화 정리 — 전체 리팩토링 여정",
-    desc: "모놀리식 두 파일에서 계층이 있는 판단 파이프라인으로, 14개 PR을 거친 전체 요약",
+    href: "/reports/v1",
+    title: "리포트 v1",
+    desc: "2026-07-17 2주차 작업 정리",
   },
   {
-    href: "/reports/risk-logic",
-    title: "리스크 판단 로직 정리",
-    desc: "중복 채점 버그 정리 & Level 1~5 공식 기준표 반영",
-  },
-  {
-    href: "/reports/labels-thresholds",
-    title: "labels.py / thresholds.py 정리",
-    desc: "흩어져 있던 라벨·상수를 한 곳에 모은 기록",
-  },
-  {
-    href: "/reports/pytest-guide",
-    title: "pytest 테스트 스위트 가이드",
-    desc: "리팩토링해도 로직이 그대로인지 자동으로 검증하는 방법",
-  },
-  {
-    href: "/reports/verification-report",
-    title: "판정 로직 검증 리포트",
-    desc: "시뮬레이터 로그와 pytest를 교차 확인한 28가지 판정 분기 검증",
+    href: "/reports/v2",
+    title: "리포트 v2",
+    desc: "2026-07-24 3주차 작업 정리",
   },
 ];
 
@@ -59,7 +44,7 @@ export default function ReportsIndex() {
         <h1 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "8px" }}>리포트 모음</h1>
         <p style={{ color: "#666", marginBottom: "32px" }}>AI CCTV 안전 판단 시스템 개발 기록</p>
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "12px" }}>
-          {reports.map((r) => (
+          {versions.map((r) => (
             <li key={r.href}>
               <Link
                 href={r.href}

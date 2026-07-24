@@ -1,8 +1,8 @@
 "use client";
 
-import { useSupabaseSession } from "../_components/useSupabaseSession";
-import LoginScreen, { LoadingScreen } from "../_components/LoginScreen";
-import LogoutButton from "../_components/LogoutButton";
+import { useSupabaseSession } from "../../_components/useSupabaseSession";
+import LoginScreen, { LoadingScreen } from "../../_components/LoginScreen";
+import LogoutButton from "../../_components/LogoutButton";
 
 export default function PytestGuideReport() {
   const session = useSupabaseSession();
