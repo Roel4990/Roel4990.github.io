@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioWatch 검증 결과와 한계</title>
+  <link rel="stylesheet" href="biowatch-report.css">
+</head>
+<body>
+  <div class="top"><b>BioWatch — 검증 결과와 한계</b><div class="tags"><span class="tag">09 / 10</span><span class="tag">Evidence Review</span></div></div>
+  <nav aria-label="문서 목차"><a href="#levels">검증 수준</a><a href="#internal">내부 검증</a><a href="#external">실측 검증</a><a href="#fp">오탐 관리</a><a href="#gaps">남은 공백</a></nav>
+
+  <main>
+    <p class="eyebrow">Validation · Limitations</p>
+    <h1>높은 내부 F1과<br>실사용 성능은 같은 의미가 아닙니다</h1>
+    <p class="lede">공공 ECG 안에서의 그룹 교차검증, 다른 출처의 1~5번 데이터, Galaxy Watch PPG 검증은 서로 다른 수준의 증거입니다. 결과를 섞지 않고 무엇을 확인했는지 구분했습니다.</p>
+
+    <section id="levels">
+      <div class="head"><span class="num">01</span><h2>검증 수준</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>수준</th><th>데이터</th><th>확인하는 것</th><th>확인하지 못하는 것</th></tr></thead>
+        <tbody>
+          <tr><td>내부 OOF</td><td>MIT-BIH ECG</td><td>새 대상자 그룹에 대한 데이터셋 내부 일반화</td><td>Watch PPG 일반화</td></tr>
+          <tr><td>출처 외 검증</td><td>1~5번 자체 측정</td><td>절대값 모델의 domain shift와 오탐</td><td>의학적 부정맥 성능</td></tr>
+          <tr><td>개인 정상 검증</td><td>Galaxy Watch 5분 + 5분</td><td>baseline 이후 정상 유지 여부</td><td>실제 부정맥 검출률</td></tr>
+          <tr><td>앱 연동 검증</td><td>Watch → FastAPI</td><td>CSV·API·모델 전체 흐름</td><td>장기 운영 안정성</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="internal">
+      <div class="head"><span class="num">02</span><h2>공공데이터 내부 성능 요약</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>과제</th><th>방식</th><th>관심 클래스 F1</th><th>판단</th></tr></thead>
+        <tbody>
+          <tr><td>부정맥</td><td>개인 기준 Random Forest</td><td><strong>0.897</strong></td><td>우선 실사용 후보</td></tr>
+          <tr><td>급성 스트레스</td><td>균형 Random Forest</td><td>0.642</td><td>실험 기능</td></tr>
+          <tr><td>급성 스트레스</td><td>개인 기준 Random Forest</td><td>0.627</td><td>개선 확인 안 됨</td></tr>
+          <tr><td>피로</td><td>절대값 Random Forest</td><td>0.571</td><td>60초 모델 부족</td></tr>
+          <tr><td>피로</td><td>개인 기준 Random Forest</td><td>0.566</td><td>개선 확인 안 됨</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="external">
+      <div class="head"><span class="num">03</span><h2>Galaxy Watch 정상 외부 검증</h2></div>
+      <div class="cards">
+        <div class="card"><h3>Calibration</h3><p>약 304초, 7,600행, 25Hz 데이터에서 5개 유효 구간을 만들었습니다.</p></div>
+        <div class="card"><h3>Evaluation</h3><p>약 312초, 7,800행에서 5개 유효 구간과 0개 실패 구간을 얻었습니다.</p></div>
+        <div class="card"><h3>부정맥 결과</h3><p>다섯 구간 모두 normal, 최고 이상 확률은 약 26.9%였습니다.</p></div>
+        <div class="card"><h3>스트레스 결과</h3><p>동일 정상 데이터에서 약 65.0%가 나와 실제 오탐 위험을 확인했습니다.</p></div>
+      </div>
+      <div class="note success"><strong>확인된 부분 —</strong> Watch CSV에서 PPG peak와 RR·HRV를 계산하고 개인 기준 모델까지 연결하는 end-to-end 흐름은 정상 작동했습니다.</div>
+    </section>
+
+    <section id="fp">
+      <div class="head"><span class="num">04</span><h2>정상 오탐을 더 위험하게 본 이유</h2></div>
+      <p class="desc">사용자가 정상인데 반복적으로 부정맥 경고를 받으면 불안과 경보 피로가 커지고 결국 기능을 신뢰하지 않게 됩니다. 그래서 recall만 올리는 것보다 정상 specificity와 false positive rate를 별도로 관리해야 합니다.</p>
+      <div class="flow">
+        <div class="flow-step"><strong>임계값 조정</strong> — validation OOF에서 허용 가능한 정상 오탐률을 먼저 정합니다.</div>
+        <div class="flow-step"><strong>반복 확인</strong> — 한 구간 최댓값만으로 경고하지 않고 연속·다수 구간 조건을 검토합니다.</div>
+        <div class="flow-step"><strong>품질 게이트</strong> — 움직임, off-body, peak 불일치가 있으면 예측 대신 unavailable로 처리합니다.</div>
+        <div class="flow-step"><strong>메시지 제한</strong> — 진단 표현 대신 재측정과 추가 확인이 필요한 가능성으로 안내합니다.</div>
+      </div>
+    </section>
+
+    <section id="gaps">
+      <div class="head"><span class="num">05</span><h2>아직 확보하지 못한 증거</h2></div>
+      <div class="cards">
+        <div class="card"><h3>실제 양성 Watch 데이터</h3><p>Galaxy Watch로 측정한 의학적으로 확인된 부정맥 구간이 없습니다.</p></div>
+        <div class="card"><h3>대규모 정상 대상자</h3><p>다양한 연령·성별·피부·활동 조건의 정상 오탐률을 측정하지 못했습니다.</p></div>
+        <div class="card"><h3>동시 ECG 기준</h3><p>Watch PPG와 임상 ECG를 동시에 측정한 정답 비교가 없습니다.</p></div>
+        <div class="card"><h3>장기 변화</h3><p>baseline 노후화, 일간 변동과 장기 사용 중 재보정 주기를 검증하지 못했습니다.</p></div>
+      </div>
+      <div class="note danger"><strong>따라서 —</strong> 현재 결과는 기술 프로토타입의 가능성을 보여주지만 의료기기 성능이나 임상 진단 정확도로 주장할 수 없습니다.</div>
+    </section>
+  </main>
+
+  <footer>BioWatch 개인화 생체 분석 프로젝트 · 검증 결과와 한계 — 2026-08-14</footer>
+</body>
+</html>

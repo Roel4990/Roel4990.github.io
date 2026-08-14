@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioWatch 부정맥 모델 결과</title>
+  <link rel="stylesheet" href="biowatch-report.css">
+</head>
+<body>
+  <div class="top"><b>BioWatch — 정상·부정맥 이진분류</b><div class="tags"><span class="tag">05 / 10</span><span class="tag">Random Forest</span></div></div>
+  <nav aria-label="문서 목차"><a href="#data">데이터</a><a href="#comparison">모델 비교</a><a href="#final">최종 모델</a><a href="#risk">해석 주의</a></nav>
+
+  <main>
+    <p class="eyebrow">Arrhythmia · Binary Classification</p>
+    <h1>가장 분리 가능성이 높았던<br>정상 대 부정맥 모델</h1>
+    <p class="lede">MIT-BIH ECG의 공식 주석을 사용해 60초 HR·HRV 피처를 만들고, 정상 데이터의 다양성을 확보하면서도 동일 대상자의 정보 누수를 막았습니다.</p>
+
+    <div class="stats">
+      <div class="stat"><strong>3,000</strong><span>normal 윈도우</span></div>
+      <div class="stat"><strong>508</strong><span>arrhythmia 윈도우</span></div>
+      <div class="stat"><strong>61</strong><span>대상자 그룹</span></div>
+      <div class="stat"><strong>0.897</strong><span>부정맥 OOF F1</span></div>
+      <div class="stat"><strong>0.940</strong><span>Macro F1</span></div>
+    </div>
+
+    <section id="data">
+      <div class="head"><span class="num">01</span><h2>학습 데이터 구성</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>클래스</th><th>출처</th><th>윈도우</th><th>의도</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="2">normal</td><td>Normal Sinus Rhythm DB</td><td class="mono">2,498</td><td>정상 대상자 범위 확대</td></tr>
+          <tr><td>Arrhythmia DB 내부 normal</td><td class="mono">502</td><td>같은 측정 환경의 정상 제공</td></tr>
+          <tr><td>arrhythmia</td><td>Arrhythmia DB 주석 구간</td><td class="mono">508</td><td>임상 주석 기반 비정상</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note">정상 수가 더 많지만 accuracy만 보지 않고 balanced accuracy, 부정맥 F1과 confusion matrix를 함께 확인했습니다.</div>
+    </section>
+
+    <section id="comparison">
+      <div class="head"><span class="num">02</span><h2>정상 3,000 / 부정맥 508 모델 비교</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>모델</th><th>Accuracy</th><th>Balanced Accuracy</th><th>부정맥 F1</th><th>Macro F1</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Random Forest</strong></td><td>0.9726</td><td>0.9268</td><td><strong>0.9012</strong></td><td><strong>0.9427</strong></td></tr>
+          <tr><td>XGBoost</td><td>0.9709</td><td>0.9241</td><td>0.8953</td><td>0.9392</td></tr>
+          <tr><td>CatBoost</td><td>0.9698</td><td>0.9218</td><td>0.8912</td><td>0.9368</td></tr>
+        </tbody>
+      </table></div>
+      <p class="desc">비교 실험에서 Random Forest가 근소하게 가장 높았고, 배포와 해석이 단순해 우선 모델로 선택했습니다.</p>
+    </section>
+
+    <section id="final">
+      <div class="head"><span class="num">03</span><h2>개인 기준 피처를 적용한 최종 OOF</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>Accuracy</th><th>Balanced Accuracy</th><th>Precision</th><th>Recall</th><th>부정맥 F1</th><th>Macro F1</th></tr></thead>
+        <tbody><tr><td>0.9709</td><td>0.9315</td><td>0.9194</td><td>0.8760</td><td><strong>0.8972</strong></td><td>0.9401</td></tr></tbody>
+      </table></div>
+      <div class="note success"><strong>결론 —</strong> 공공 ECG 내부 검증에서는 목표였던 부정맥 F1 약 0.90에 도달했습니다. 다만 이 점수는 Galaxy Watch PPG 환경의 성능을 보장하지 않습니다.</div>
+    </section>
+
+    <section id="risk">
+      <div class="head"><span class="num">04</span><h2>임상 진단으로 해석할 수 없는 이유</h2></div>
+      <div class="cards">
+        <div class="card"><h3>ECG와 PPG 차이</h3><p>학습 신호는 ECG 기반 RR이지만 실사용 입력은 손목 PPG 기반 pulse interval입니다.</p></div>
+        <div class="card"><h3>60초 구간 라벨</h3><p>한 구간의 통계가 특정 부정맥 유형이나 지속시간을 직접 설명하지는 않습니다.</p></div>
+        <div class="card"><h3>대상자 분포</h3><p>연령·성별·질환별 균형을 보장한 데이터 구성이 아닙니다.</p></div>
+        <div class="card"><h3>표현 원칙</h3><p>결과는 진단이 아니라 <em>possible_abnormal</em> 가능성 알림으로 제한합니다.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>BioWatch 개인화 생체 분석 프로젝트 · 부정맥 모델 결과 — 2026-08-14</footer>
+</body>
+</html>

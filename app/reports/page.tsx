@@ -16,6 +16,7 @@ const versions = [
     title: "리포트 v2",
     desc: "2026-07-24 3주차 작업 정리",
   },
+  { href: "/reports/v3", title: "리포트 v3", desc: "2026-08-14 프로젝트 전체 리포트 허브" },
 ];
 
 export default function ReportsIndex() {

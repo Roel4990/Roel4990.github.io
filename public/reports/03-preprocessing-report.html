@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioWatch 전처리 파이프라인</title>
+  <link rel="stylesheet" href="biowatch-report.css">
+</head>
+<body>
+  <div class="top">
+    <b>BioWatch — ECG·PPG 전처리 파이프라인</b>
+    <div class="tags"><span class="tag">03 / 10</span><span class="tag">60초 윈도우</span></div>
+  </div>
+
+  <nav aria-label="문서 목차">
+    <a href="#pipeline">처리 순서</a>
+    <a href="#features">피처</a>
+    <a href="#quality">품질 기준</a>
+    <a href="#troubleshooting">오류와 수정</a>
+    <a href="#outputs">산출물</a>
+  </nav>
+
+  <main>
+    <p class="eyebrow">Preprocessing · Feature Engineering</p>
+    <h1>서로 다른 생체신호를<br>같은 60초 피처 형식으로 변환했습니다</h1>
+    <p class="lede">
+      ECG, BVP, IBI와 Galaxy Watch PPG는 원본 구조와 품질이 다릅니다.
+      데이터 원본은 보존하고 데이터셋별 전처리를 분리하되, 마지막 출력 스키마는 통일했습니다.
+    </p>
+
+    <section id="pipeline">
+      <div class="head"><span class="num">01</span><h2>공통 처리 순서</h2></div>
+      <div class="flow">
+        <div class="flow-step"><strong>1. 원본 읽기</strong> — WFDB ECG, E4 IBI/BVP, CSV PPG를 출처별 로더로 읽습니다.</div>
+        <div class="flow-step"><strong>2. 60초 분할</strong> — 기본은 비중첩 60초이며 실시간 입력은 최소 55초를 요구합니다.</div>
+        <div class="flow-step"><strong>3. peak 검출</strong> — ECG는 R-peak, PPG는 양·음 극성을 비교해 pulse peak를 찾습니다.</div>
+        <div class="flow-step"><strong>4. RR 정제</strong> — 인접 peak 간격을 ms로 바꾸고 300~2,000ms 범위만 사용합니다.</div>
+        <div class="flow-step"><strong>5. HR·HRV 계산</strong> — 시간영역과 주파수영역 피처를 동일한 열로 생성합니다.</div>
+        <div class="flow-step"><strong>6. 품질 판정</strong> — beat 수, 유효 RR 비율, 기기 HR과의 차이를 검사합니다.</div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="head"><span class="num">02</span><h2>최종 공통 피처</h2></div>
+      <div class="wrap">
+        <table>
+          <thead><tr><th>영역</th><th>피처</th><th>의미</th></tr></thead>
+          <tbody>
+            <tr><td>심박·RR</td><td class="mono">mean_hr, min_hr, max_hr, std_hr, mean_rr</td><td>심박 수준과 변동</td></tr>
+            <tr><td>시간 HRV</td><td class="mono">sdnn, rmssd, sdsd, nn50, pnn50, lnrmssd</td><td>박동 간 변동성</td></tr>
+            <tr><td>주파수 HRV</td><td class="mono">lf, hf, log_lf, log_hf, nlf, nhf, lf_hf</td><td>저·고주파 성분과 비율</td></tr>
+            <tr><td>추적 정보</td><td class="mono">dataset, subject_id, record_id, window_index, label</td><td>그룹 분할과 재현성</td></tr>
+            <tr><td>품질 정보</td><td class="mono">beat_count, valid_rr_count, quality_status</td><td>학습 가능 여부 판단</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="quality">
+      <div class="head"><span class="num">03</span><h2>PPG 품질 기준</h2></div>
+      <div class="cards">
+        <div class="card"><h3>필터</h3><p>3차 Butterworth band-pass를 사용하며 하한 0.5Hz, 상한은 5Hz와 샘플링 주파수의 45% 중 작은 값입니다.</p></div>
+        <div class="card"><h3>최소 박동</h3><p>60초 구간에서 30개 이상의 beat가 있어야 계산을 진행합니다.</p></div>
+        <div class="card"><h3>유효 RR</h3><p>300~2,000ms RR의 비율이 80% 이상이어야 유효 구간으로 인정합니다.</p></div>
+        <div class="card"><h3>HR 교차검증</h3><p>PPG peak 기반 HR과 기기 HR 중앙값의 차이가 20bpm을 넘으면 품질 이상으로 봅니다.</p></div>
+      </div>
+      <div class="note warn"><strong>주파수 HRV 주의 —</strong> RR을 4Hz로 보간해 LF 0.04~0.15Hz, HF 0.15~0.40Hz를 계산하지만 60초는 주파수 HRV에 짧은 구간입니다.</div>
+    </section>
+
+    <section id="troubleshooting">
+      <div class="head"><span class="num">04</span><h2>실패를 통해 수정한 부분</h2></div>
+      <div class="wrap">
+        <table>
+          <thead><tr><th>문제</th><th>관찰 결과</th><th>수정·결정</th></tr></thead>
+          <tbody>
+            <tr><td>MIT-BIH 전 레코드 실패</td><td><span class="mono">assign_window_label()</span> 인자 3개 누락</td><td>rhythm 비율과 상세값을 호출부에 전달</td></tr>
+            <tr><td>WESAD 일부 세션 실패</td><td>subject 8에서 <span class="mono">list index out of range</span></td><td>세션 구조 예외처리와 파일 검증 추가</td></tr>
+            <tr><td>손목 BVP HRV 과대</td><td>정상에서도 RMSSD·SDNN이 비현실적으로 큼</td><td>WESAD는 chest ECG를 주 분석 신호로 변경</td></tr>
+            <tr><td>겹치는 윈도우 논의</td><td>표본은 늘지만 인접 구간이 매우 유사</td><td>기본 비교는 비중첩 60초 유지</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="outputs">
+      <div class="head"><span class="num">05</span><h2>산출물과 보존 원칙</h2></div>
+      <div class="cards">
+        <div class="card"><h3>feature CSV</h3><p>윈도우 단위 학습 입력과 라벨을 저장합니다.</p></div>
+        <div class="card"><h3>profile JSON</h3><p>상태별 피처의 평균과 표준편차를 요약해 비교합니다.</p></div>
+        <div class="card"><h3>errors CSV</h3><p>실패 레코드와 이유를 남겨 조용한 데이터 누락을 방지합니다.</p></div>
+        <div class="card"><h3>원본 불변</h3><p><span class="mono">data/</span>는 수정하지 않고 결과는 별도 processed 경로에 저장합니다.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>BioWatch 개인화 생체 분석 프로젝트 · 전처리 파이프라인 — 2026-08-14</footer>
+</body>
+</html>

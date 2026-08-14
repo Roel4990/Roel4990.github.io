@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioWatch FastAPI 연동</title>
+  <link rel="stylesheet" href="biowatch-report.css">
+</head>
+<body>
+  <div class="top"><b>BioWatch — 테스트용 FastAPI 분석 서버</b><div class="tags"><span class="tag">08 / 10</span><span class="tag">LAN Prototype</span></div></div>
+  <nav aria-label="문서 목차"><a href="#purpose">목적</a><a href="#contract">API</a><a href="#flow">처리 흐름</a><a href="#runtime">실행 조건</a><a href="#boundary">경계</a></nav>
+
+  <main>
+    <p class="eyebrow">FastAPI · Watch Integration</p>
+    <h1>모델 실험 코드를 건드리지 않고<br>워치 CSV를 받을 수 있게 분리했습니다</h1>
+    <p class="lede">FastAPI 코드는 실제 제품 서버로 확정된 구성이 아니라 Galaxy Watch 데이터와 모델을 연결해 검증하기 위한 독립 테스트 서버입니다.</p>
+
+    <section id="purpose">
+      <div class="head"><span class="num">01</span><h2>분리한 이유</h2></div>
+      <div class="cards">
+        <div class="card"><h3>실험 보존</h3><p>노트북·학습 스크립트와 서비스 코드를 분리해 기존 결과를 덮어쓰지 않습니다.</p></div>
+        <div class="card"><h3>입력 통일</h3><p>Android가 생성한 CSV 하나를 calibration과 prediction 양쪽에서 사용합니다.</p></div>
+        <div class="card"><h3>모델 교체</h3><p>부정맥과 스트레스 endpoint가 같은 전처리·baseline을 공유할 수 있습니다.</p></div>
+        <div class="card"><h3>실패 명시</h3><p>품질 부족 시 억지 예측 대신 <span class="mono">unavailable</span>을 반환합니다.</p></div>
+      </div>
+    </section>
+
+    <section id="contract">
+      <div class="head"><span class="num">02</span><h2>API 계약</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>Method</th><th>Endpoint</th><th>역할</th></tr></thead>
+        <tbody>
+          <tr><td>GET</td><td class="mono">/health</td><td>서버 상태 확인</td></tr>
+          <tr><td>GET</td><td class="mono">/api/v1/model/info</td><td>모델 버전·threshold 확인</td></tr>
+          <tr><td>POST</td><td class="mono">/api/v1/calibrations</td><td>정상 5분 CSV에서 baseline 생성</td></tr>
+          <tr><td>POST</td><td class="mono">/api/v1/predictions</td><td>부정맥 가능성 분석</td></tr>
+          <tr><td>POST</td><td class="mono">/api/v1/stress/predictions</td><td>급성 스트레스 실험 분석</td></tr>
+        </tbody>
+      </table></div>
+      <pre>Content-Type: multipart/form-data
+Authorization: Bearer {token}
+
+fields:
+  subject_id
+  baseline_id
+  file</pre>
+    </section>
+
+    <section id="flow">
+      <div class="head"><span class="num">03</span><h2>서버 내부 처리 흐름</h2></div>
+      <div class="flow">
+        <div class="flow-step"><strong>CSV 검증</strong> — Timestamp, HR, PPG_GREEN 필수 열과 업로드 크기를 확인합니다.</div>
+        <div class="flow-step"><strong>60초 전처리</strong> — PPG peak, RR, 13개 HR·HRV 피처와 품질 상태를 계산합니다.</div>
+        <div class="flow-step"><strong>baseline 조회</strong> — subject_id와 baseline_id가 연결된 정상 profile을 읽습니다.</div>
+        <div class="flow-step"><strong>26개 피처 변환</strong> — 상대 변화와 z-score를 모델 입력으로 만듭니다.</div>
+        <div class="flow-step"><strong>윈도우 예측</strong> — 각 유효 60초 구간의 확률을 계산합니다.</div>
+        <div class="flow-step"><strong>최종 응답</strong> — 현재는 가장 높은 이상 확률을 대표값으로 반환합니다.</div>
+      </div>
+    </section>
+
+    <section id="runtime">
+      <div class="head"><span class="num">04</span><h2>로컬 검증 환경</h2></div>
+      <div class="wrap"><table>
+        <thead><tr><th>항목</th><th>설정</th></tr></thead>
+        <tbody>
+          <tr><td>실행 명령</td><td class="mono">python -m uvicorn app.main:app --host 0.0.0.0 --port 8000</td></tr>
+          <tr><td>접속 주소</td><td class="mono">http://{PC의 LAN IPv4}:8000</td></tr>
+          <tr><td>기본 개발 token</td><td class="mono">local-dev-token</td></tr>
+          <tr><td>최대 업로드</td><td>5MB</td></tr>
+          <tr><td>baseline 저장</td><td>서버 런타임 JSON 저장소</td></tr>
+          <tr><td>최소 입력 길이</td><td>유효 신호 55초 이상</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn">워치에서 <span class="mono">localhost</span>는 워치 자신을 의미하므로 사용할 수 없습니다. PC와 워치를 같은 Wi-Fi에 연결하고 PC의 IPv4를 사용했습니다.</div>
+    </section>
+
+    <section id="boundary">
+      <div class="head"><span class="num">05</span><h2>현재 서버의 경계</h2></div>
+      <div class="cards">
+        <div class="card"><h3>프로토타입 인증</h3><p>고정 개발 token은 외부 공개 환경에 적합하지 않습니다.</p></div>
+        <div class="card"><h3>단일 서버 저장</h3><p>baseline 지속성과 다중 인스턴스 동기화가 보장되지 않습니다.</p></div>
+        <div class="card"><h3>최댓값 집계</h3><p>여러 윈도우 중 최댓값은 민감하지만 한 번의 노이즈에도 영향을 받습니다.</p></div>
+        <div class="card"><h3>제품 분리</h3><p>실제 운영 채택 전에는 보안, 저장소, 모니터링과 모델 검증이 별도로 필요합니다.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>BioWatch 개인화 생체 분석 프로젝트 · FastAPI 테스트 연동 — 2026-08-14</footer>
+</body>
+</html>

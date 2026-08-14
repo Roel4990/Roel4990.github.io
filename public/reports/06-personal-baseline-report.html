@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioWatch 개인 정상 기준 모델</title>
+  <link rel="stylesheet" href="biowatch-report.css">
+</head>
+<body>
+  <div class="top"><b>BioWatch — 개인 정상 기준과 변화율</b><div class="tags"><span class="tag">06 / 10</span><span class="tag">Baseline Normalization</span></div></div>
+  <nav aria-label="문서 목차"><a href="#problem">문제</a><a href="#features">변화 피처</a><a href="#training">학습</a><a href="#watch">실측 결과</a><a href="#limits">한계</a></nav>
+
+  <main>
+    <p class="eyebrow">Personal Baseline · Domain Shift</p>
+    <h1>사람 간 절대값 차이보다<br>자기 평소 상태에서의 변화를 보았습니다</h1>
+    <p class="lede">평균 RR 600ms가 어떤 사람에게는 평소값이고 다른 사람에게는 급격한 변화일 수 있습니다. 절대 HR·HRV만 사용한 모델이 실측 정상 데이터를 모두 부정맥으로 오인하면서 개인 정상 기준의 필요성이 명확해졌습니다.</p>
+
+    <section id="problem">
+      <div class="head"><span class="num">01</span><h2>절대값 모델의 실측 문제</h2></div>
+      <div class="cards">
+        <div class="card"><h3>학습 정상 평균</h3><p>MIT-BIH profile의 normal mean RR은 약 892ms, mean HR은 약 70bpm이었습니다.</p></div>
+        <div class="card"><h3>다른 정상 집단</h3><p>별도 8인 자료의 정상 평균은 RR 약 683ms, HR 약 89bpm으로 분포 자체가 달랐습니다.</p></div>
+        <div class="card"><h3>실측 결과</h3><p>1~5번 데이터에 절대값 모델을 적용했을 때 정상 구간도 대부분 부정맥으로 판단했습니다.</p></div>
+        <div class="card"><h3>원인</h3><p>모델이 상태 차이와 함께 데이터셋·센서·개인 차이까지 학습한 domain shift 문제였습니다.</p></div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="head"><span class="num">02</span><h2>개인 기준에서 만드는 26개 피처</h2></div>
+      <p class="desc">정상 calibration 5분의 13개 HR·HRV 평균과 표준편차를 기준으로, 평가 60초 구간의 상대 변화와 z-score를 계산합니다.</p>
+      <pre>relative_x = (현재값 - 개인 기준 평균) / (|개인 기준 평균| + ε)
+z_x        = (현재값 - 개인 기준 평균) / (개인 기준 표준편차 + ε)
+
+13개 원본 지표 × {relative, z} = 26개 개인화 입력 피처</pre>
+      <div class="wrap"><table>
+        <thead><tr><th>13개 기준 지표</th><th>의미</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">mean_rr, mean_hr</td><td>평균 박동 간격과 심박수</td></tr>
+          <tr><td class="mono">sdsd, nn50, pnn50, sdnn, rmssd, lnrmssd</td><td>시간영역 HRV</td></tr>
+          <tr><td class="mono">log_lf, log_hf, nlf, nhf, lf_hf</td><td>주파수영역 HRV</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="training">
+      <div class="head"><span class="num">03</span><h2>공공데이터에서 baseline을 연결한 방법</h2></div>
+      <div class="flow">
+        <div class="flow-step"><strong>대상자별 정상 구간 수집</strong> — 동일 대상자의 normal 윈도우를 baseline 후보로 사용합니다.</div>
+        <div class="flow-step"><strong>기준 profile 생성</strong> — 정상 피처의 평균과 표준편차를 계산합니다.</div>
+        <div class="flow-step"><strong>평가 구간 변환</strong> — normal과 arrhythmia 각각을 상대 변화·z-score로 변환합니다.</div>
+        <div class="flow-step"><strong>그룹 교차검증</strong> — 대상자 단위로 분리해 baseline 정보 누수를 막습니다.</div>
+      </div>
+      <div class="note warn"><strong>제약 —</strong> 모든 부정맥 대상자에게 충분한 독립 정상 calibration이 있는 것은 아닙니다. profile 평균을 연결한 실험은 완전한 개인화보다 빠른 가능성 검증에 가깝습니다.</div>
+    </section>
+
+    <section id="watch">
+      <div class="head"><span class="num">04</span><h2>Galaxy Watch 5분 정상 실측</h2></div>
+      <div class="stats">
+        <div class="stat"><strong>7,600</strong><span>calibration rows</span></div>
+        <div class="stat"><strong>7,800</strong><span>evaluation rows</span></div>
+        <div class="stat"><strong>5 + 5</strong><span>유효 60초 구간</span></div>
+        <div class="stat"><strong>0</strong><span>전처리 실패 구간</span></div>
+      </div>
+      <div class="wrap"><table>
+        <thead><tr><th>평가 구간</th><th>Mean HR</th><th>Mean RR</th><th>이상 확률</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>94.874</td><td>640.430</td><td>12.9%</td><td>normal</td></tr>
+          <tr><td>2</td><td>93.289</td><td>649.670</td><td>0.4%</td><td>normal</td></tr>
+          <tr><td>3</td><td>99.045</td><td>657.778</td><td>2.9%</td><td>normal</td></tr>
+          <tr><td>4</td><td>107.039</td><td>586.931</td><td>26.9%</td><td>normal</td></tr>
+          <tr><td>5</td><td>95.452</td><td>641.304</td><td>3.0%</td><td>normal</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note success"><strong>관찰 —</strong> 개인 정상 calibration을 사용하자 5개 구간 모두 정상으로 판정됐습니다. 실제 앱 반복 측정에서도 본인은 약 3~9%, 다른 사람 데이터를 본인 기준에 넣었을 때 약 20%로 나타났습니다.</div>
+    </section>
+
+    <section id="limits">
+      <div class="head"><span class="num">05</span><h2>해결된 것과 남은 것</h2></div>
+      <div class="cards">
+        <div class="card"><h3>개선</h3><p>개인마다 다른 resting HR·HRV 때문에 생기는 정상 오탐을 줄일 가능성을 확인했습니다.</p></div>
+        <div class="card"><h3>미해결</h3><p>운동, 자세, 카페인, 수면, 센서 접촉과 같은 일시 변화는 여전히 비정상처럼 보일 수 있습니다.</p></div>
+        <div class="card"><h3>운영 조건</h3><p>최초 5분은 안정된 자세에서 정상 calibration으로 측정해야 합니다.</p></div>
+        <div class="card"><h3>표현 제한</h3><p>개인 변화는 부정맥 진단이 아니라 추가 확인이 필요한 변화 신호입니다.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>BioWatch 개인화 생체 분석 프로젝트 · 개인 정상 기준 모델 — 2026-08-14</footer>
+</body>
+</html>
