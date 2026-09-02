@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   description: "안세홍 - Software Engineer 이력서 / 포트폴리오",
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
